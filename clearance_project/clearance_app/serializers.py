@@ -38,32 +38,18 @@ class StudentSerializer(serializers.ModelSerializer):
         student = Student.objects.create(department=department, clearance_status=clearance_status, **validated_data)
         return student
 
-class DepartmentClearanceSerializer(serializers.ModelSerializer):
-    student = StudentSerializer()
-    department = DepartmentSerializer()
-    clearance_status = ClearanceStatusSerializer()
-
-    class Meta:
-        model = DepartmentClearance
-        fields = ['id', 'student', 'department', 'clearance_status', 'request_date', 'update_date']
-
-class NotificationSerializer(serializers.ModelSerializer):
-    recipient = StudentSerializer()
-
-    class Meta:
-        model = Notification
-        fields = ['id', 'recipient', 'message', 'created_at', 'read']
-
-class ClearanceDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ClearanceDocument
-        fields = ['id', 'clearance_request', 'document', 'uploaded_at']
 
 
 class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ['id', 'student', 'department', 'file', 'uploaded_at']
+        fields = ['id', 'student', 'department', 'description', 'file', 'uploaded_at']
+        
+        def create(self, validated_data):
+            request = self.context.get('request')
+            student = request.user  # Automatically assign the student based on the logged-in user
+            validated_data['student'] = student
+            return super().create(validated_data)
         
 class ChangePasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(required=True)

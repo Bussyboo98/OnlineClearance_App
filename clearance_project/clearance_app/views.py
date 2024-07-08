@@ -50,43 +50,8 @@ class StudentListView(generics.ListAPIView):
     serializer_class = StudentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class DepartmentClearanceCreateView(generics.CreateAPIView):
-    queryset = DepartmentClearance.objects.all()
-    serializer_class = DepartmentClearanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-class DepartmentClearanceListView(generics.ListAPIView):
-    queryset = DepartmentClearance.objects.all()
-    serializer_class = DepartmentClearanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
-class StudentDepartmentClearanceListView(generics.ListAPIView):
-    serializer_class = DepartmentClearanceSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        student_id = self.kwargs['student_id']
-        return DepartmentClearance.objects.filter(student_id=student_id)
-
-class NotificationListView(generics.ListAPIView):
-    queryset = Notification.objects.all()
-    serializer_class = NotificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-class NotificationCreateView(generics.CreateAPIView):
-    queryset = Notification.objects.all()
-    serializer_class = NotificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-class ClearanceDocumentCreateView(generics.CreateAPIView):
-    queryset = ClearanceDocument.objects.all()
-    serializer_class = ClearanceDocumentSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-class ClearanceDocumentListView(generics.ListAPIView):
-    queryset = ClearanceDocument.objects.all()
-    serializer_class = ClearanceDocumentSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
 
 class AdminStudentCreateView(generics.CreateAPIView):
@@ -98,13 +63,17 @@ class FileUploadView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        file_serializer = DocumentSerializer(data=request.data)
+        print("Request data:", request.data)
+        data = request.data.copy()
+        data['student'] = request.user.id
+        print("Modified data:", data)
+        file_serializer = DocumentSerializer(data=data, context={'request': request})
         if file_serializer.is_valid():
             file_serializer.save()
             return Response(file_serializer.data, status=status.HTTP_201_CREATED)
         else:
+            print("Errors:", file_serializer.errors)
             return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class DocumentListView(generics.ListCreateAPIView):
     queryset = Document.objects.all()
@@ -129,11 +98,16 @@ class DocumentListView(generics.ListCreateAPIView):
         return Response(status=status.HTTP_201_CREATED)
 
 
-class DocumentDetailView(generics.RetrieveDestroyAPIView):
-    queryset = Document.objects.all()
-    serializer_class = DocumentSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    
+class UploadDeptClearanceView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        serializer = DepartmentClearanceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class ClearStudentView(APIView):
     permission_classes = [permissions.IsAdminUser]
 
